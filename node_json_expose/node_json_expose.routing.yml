@@ -1,0 +1,8 @@
+node_json_expose.json_node:
+  path: '/json_deliver/{site_api_key}/node/{id}'
+  defaults:
+    _title: 'JSON Content'
+    _controller: '\Drupal\node_json_expose\Controller\DeliverJson::content'
+  requirements:
+    _access: 'TRUE'
+    

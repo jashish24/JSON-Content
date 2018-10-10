@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * @file
+ * This modules allow Administrator to add Site API Key, which can be used to expose page content in JSON format.
+ * It adds new field to 'Basic site settings' form named as Site API Key under Site Details section.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Component\Utility\Html;
+
+/**
+ * Implements hook_form_alter
+ */
+
+function node_json_expose_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  
+  // Check for Basic site settings form and new field to it
+  if ($form_id == 'system_site_information_settings') {
+    
+    // Load Site API key 
+    $site_api_key = \Drupal::config('system.site') -> get('siteapikey');
+    
+    // New field to hold Site API Key
+    $form['site_information']['site_api_key'] = [
+      '#type' => 'textfield',
+      '#title' => t('Site API Key'),
+      '#required' => FALSE,
+      '#placeholder' => t('No API Key yet'),
+      '#description' => t('Update Site API Key here, which can be used to expose page content in JSON format. The exposed service format will be: <b>//{base_url}/json_deliver/{site_api_key}/node/{node_id}</b>.<br>It will deliver <i style="color:#bb0000;">access denied</i> if API key is not updated or correct API key is not used by clients.'),
+      '#default_value' => $site_api_key,
+    ];
+    
+    // Change form's save button text
+    $form['actions']['submit']['#value'] = t('Update Configuration');
+
+    // Add handler to save/update Site APi Key value
+    $form['#submit'][] = 'update_site_api_key_submit';
+  }
+}
+
+/**
+ * Submit handler to save/update Site API Key value
+ */
+
+function update_site_api_key_submit($form, FormStateInterface $form_state) {
+  
+  // Sanitize API key before saving
+  $site_api_key = Html::escape(trim($form_state -> getValue('site_api_key')));
+  
+  if (!empty($site_api_key)) {
+    // Save/Update Site API Key value
+    \Drupal::configFactory() -> getEditable('system.site') -> set('siteapikey', $site_api_key) -> save();
+    
+    // Display message with value of key saved
+    drupal_set_message(t('Site API Key is saved with value: <b>%site_api_key</b>', ['%site_api_key' => $site_api_key]));
+  }
+}
