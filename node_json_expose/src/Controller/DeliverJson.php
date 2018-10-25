@@ -17,27 +17,34 @@ class DeliverJson extends ControllerBase {
   protected $response;
   protected $serializer;
   protected $config_factory;
+  protected $site_api_key;
   
   public function __construct(Serializer $serializer, ConfigFactoryInterface $config_factory) {
     // Initialize serialize service
     $this -> serializer = $serializer;
     
+    // Set JSON header
     $headers = [
       'Content-Type' => 'application/json',
     ];
     
-    // Initialize response
-    $this -> response = new Response('', 200, $headers);
+    // Set default data
+    $response_data = $this -> serializer -> serialize('Access Denied', 'json');
     
-    // Initialize Response
+    // Initialize response
+    $this -> response = new Response($response_data, 403, $headers);
+    
+    // Initialize Configuration service
     $this -> config_factory = $config_factory;
+    
+    // Load saved Site API Key
+    $this -> site_api_key = $this -> config_factory -> get('system.site') -> get('siteapikey');
   }
   
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    // Instantiates this form class.
     return new static(
       // Load the service required to construct this class.
       $container -> get('serializer'),
@@ -54,27 +61,18 @@ class DeliverJson extends ControllerBase {
    * 
    */
   
-  public function content($site_api_key, NodeInterface $node) {
-    // Load saved Site API Key
-    $saved_site_api_key = $this -> config_factory -> get('system.site') -> get('siteapikey');
-    
-    // Initialize with default data and code
-    $response_data = $this -> serializer -> serialize('Access Denied', 'json');
-    $status = 403;
-    
-    if ($saved_site_api_key == $site_api_key) {
+  public function content($site_api_key, NodeInterface $node) {    
+    if ($this -> site_api_key == $site_api_key) {
       // Check node content type
       $node_type = $node -> bundle();
       
       if ($node_type == 'page') {
         // Converting data to JSON format Preparing response data
         $response_data = $this -> serializer -> serialize($node, 'json');
-        $status = 200;
+        $this -> response -> setStatusCode(200);
+        $this -> response -> setContent($response_data);
       }
     }
-    
-    $this -> response -> setStatusCode($status);
-    $this -> response -> setContent($response_data);
     
     return $this -> response;
   }
