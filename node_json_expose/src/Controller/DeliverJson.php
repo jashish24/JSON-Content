@@ -3,10 +3,11 @@
 namespace Drupal\node_json_expose\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
-use Drupal\Core\Access\AccessResult;
-use Drupal\node\Entity\Node;
+use Drupal\node\NodeInterface;
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
 
 /*
  * Controller to deliver node in JSON format
@@ -22,40 +23,54 @@ class DeliverJson extends ControllerBase {
    * 
    */
   
-  public function content($site_api_key, $id) {
+  protected $response;
+  protected $serializer;
+  protected $config_factory;
+  
+  public function __construct(Serializer $serializer, ConfigFactoryInterface $config_factory) {
+    // Initialize serialize service
+    $this -> serializer = $serializer;
+    
+    // Initialize response
+    $this -> response = new Response();
+    
+    // Initialize Response
+    $this -> config_factory = $config_factory;
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    // Instantiates this form class.
+    return new static(
+      // Load the service required to construct this class.
+      $container -> get('serializer'),
+      $container -> get('config.factory')
+    );
+  }
+  
+  public function content($site_api_key, NodeInterface $node) {
     // Load save Site API Key
-    $saved_site_api_key = \Drupal::config('system.site') -> get('siteapikey');
-    
-    // Initialize serializer service
-    $serializer = \Drupal::service('serializer');
-    
-    // Initialize return data and update when required condition is met.
-    $data = [
-      'response_code' => 403,
-      'data' => t('Access Denied'),
-    ];
+    $saved_site_api_key = $this -> config_factory -> get('system.site') -> get('siteapikey');
 
     if ($saved_site_api_key == $site_api_key) {
-      // Load required node object
-      $node_data = Node::load($id);
-
-      if ($node_data) {
-        // Check node content type
-        $node_type = $node_data -> bundle();
-        
-        if ($node_type == 'page') {
-          $data = [
-            'response_code' => 200,
-            'data' => $node_data,
-          ];
-        }
+      // Check node content type
+      $node_type = $node -> bundle();
+      
+      if ($node_type == 'page') {
+        // Converting data to JSON format Preparing response data
+        $response_data = $this -> serializer -> serialize($node, 'json');
+        $this -> response -> setStatusCode(200);
+        $this -> response -> setContent($response_data);
       }
     }
+    else {
+      $response_data = t('Access Denied');
+      $this -> response -> setStatusCode(403);
+      $this -> response -> setContent($response_data);
+    }
     
-    // Converting data to JSON format Preparing response data
-    $response_data = $serializer -> serialize($data, 'json');
-    $response = new Response();
-    $response -> setContent($response_data);
-    return $response;
+    return $this -> response;
   }
 }
