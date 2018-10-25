@@ -18,7 +18,7 @@ class DeliverJson extends ControllerBase {
    * Function to generate node JSON content
    *
    * @param string $site_api_key The passed Site API Key
-   * @param number $id The id of the node that needs to be delivered in JSON format
+   * @param number $node Node object that is passed in URL
    * @return JSON formatted response with code
    * 
    */
