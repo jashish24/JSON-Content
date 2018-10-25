@@ -14,15 +14,6 @@ use Drupal\Core\Config\ConfigFactoryInterface;
  */
 
 class DeliverJson extends ControllerBase {
-  /**
-   * Function to generate node JSON content
-   *
-   * @param string $site_api_key The passed Site API Key
-   * @param number $node Node object that is passed in URL
-   * @return JSON formatted response with code
-   * 
-   */
-  
   protected $response;
   protected $serializer;
   protected $config_factory;
@@ -50,10 +41,19 @@ class DeliverJson extends ControllerBase {
     );
   }
   
+  /**
+   * Function to generate node JSON content
+   *
+   * @param string $site_api_key The passed Site API Key
+   * @param number $node Node object that is passed in URL
+   * @return JSON formatted response with code
+   * 
+   */
+  
   public function content($site_api_key, NodeInterface $node) {
     // Load save Site API Key
     $saved_site_api_key = $this -> config_factory -> get('system.site') -> get('siteapikey');
-
+    
     if ($saved_site_api_key == $site_api_key) {
       // Check node content type
       $node_type = $node -> bundle();
