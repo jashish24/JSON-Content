@@ -22,8 +22,12 @@ class DeliverJson extends ControllerBase {
     // Initialize serialize service
     $this -> serializer = $serializer;
     
+    $headers = [
+      'Content-Type' => 'application/json',
+    ];
+    
     // Initialize response
-    $this -> response = new Response();
+    $this -> response = new Response('', 200, $headers);
     
     // Initialize Response
     $this -> config_factory = $config_factory;
@@ -51,8 +55,12 @@ class DeliverJson extends ControllerBase {
    */
   
   public function content($site_api_key, NodeInterface $node) {
-    // Load save Site API Key
+    // Load saved Site API Key
     $saved_site_api_key = $this -> config_factory -> get('system.site') -> get('siteapikey');
+    
+    // Initialize with default data and code
+    $response_data = $this -> serializer -> serialize('Access Denied', 'json');
+    $status = 403;
     
     if ($saved_site_api_key == $site_api_key) {
       // Check node content type
@@ -61,15 +69,12 @@ class DeliverJson extends ControllerBase {
       if ($node_type == 'page') {
         // Converting data to JSON format Preparing response data
         $response_data = $this -> serializer -> serialize($node, 'json');
-        $this -> response -> setStatusCode(200);
-        $this -> response -> setContent($response_data);
+        $status = 200;
       }
     }
-    else {
-      $response_data = t('Access Denied');
-      $this -> response -> setStatusCode(403);
-      $this -> response -> setContent($response_data);
-    }
+    
+    $this -> response -> setStatusCode($status);
+    $this -> response -> setContent($response_data);
     
     return $this -> response;
   }
